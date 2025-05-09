@@ -1,0 +1,907 @@
+# Set up Streamlit app in a Python file
+from pyngrok import ngrok
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer
+from gensim import corpora, models
+from gensim.models import CoherenceModel
+import pyLDAvis
+import pyLDAvis.gensim_models
+import openai
+from openai import OpenAI, AzureOpenAI
+import plotly.express as px
+import plotly.graph_objects as go
+import os
+from dotenv import load_dotenv
+import pickle
+import base64
+from io import BytesIO
+from transformers import pipeline
+from textblob import TextBlob
+
+# Load environment variables
+load_dotenv()
+
+# Download necessary NLTK data
+try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('corpora/stopwords')
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('stopwords')
+    nltk.download('wordnet')
+
+# Initialise lemmatiser and stopwords
+lemmatizer = WordNetLemmatizer()
+stop_words = set(stopwords.words('english'))
+
+# App title and description
+st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
+
+st.title("Interview Topic Analysis Dashboard")
+st.markdown("""
+This app analyses interview data to extract topics using Latent Dirichlet Allocation (LDA).
+Upload your dataset with questions, interview IDs, and answers to get started.
+""")
+
+# Initialise Openai clients globally as none
+client = None  # Regular OpenAI client
+azure_client = None  # Azure OpenAI client
+
+with st.sidebar:
+    st.header("API Configuration")
+    
+    # API selection
+    api_type = st.radio("Select API", ["OpenAI", "Azure OpenAI (Copilot)"])
+    
+    if api_type == "OpenAI":
+        api_key = st.text_input("Enter OpenAI API Key", type="password")
+        if api_key:
+            client = OpenAI(api_key=api_key)
+            st.success("API key set!")
+        else:
+            st.warning("Please enter your OpenAI API key to use GPT features")
+
+        # Choose a GPT Model
+        gpt_model_choice = st.radio(
+            "Choose GPT Model:",
+            ["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
+            index = 0
+        )
+    else:  # Azure OpenAI
+        azure_api_key = st.text_input("Enter Azure OpenAI API Key", type="password")
+        azure_endpoint = st.text_input("Enter Azure Endpoint", 
+                                     placeholder="https://your-resource.openai.azure.com")
+        if azure_api_key and azure_endpoint:
+            try:
+                azure_client = AzureOpenAI(
+                    api_key=azure_api_key,
+                    api_version="2023-12-01-preview",
+                    azure_endpoint=azure_endpoint
+                )
+                st.success("Azure OpenAI configuration set!")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+    
+    # Introduce upload code
+    st.header("Upload Data")
+    uploaded_file = st.file_uploader("Upload your CSV file", type=['csv'])
+    
+# Initialise Azure OpenAI client (for Copilot access)
+def init_azure_openai_client(api_key=None, api_endpoint=None):
+    if api_key and api_endpoint:
+        client = AzureOpenAI(
+            api_key=api_key,
+            api_version="2023-12-01-preview",  # Use the latest API version
+            azure_endpoint=api_endpoint
+        )
+        return client
+    elif "AZURE_OPENAI_API_KEY" in os.environ and "AZURE_OPENAI_ENDPOINT" in os.environ:
+        client = AzureOpenAI(
+            api_key=os.environ["AZURE_OPENAI_API_KEY"],
+            api_version="2023-12-01-preview",
+            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]
+        )
+        return client
+    return None
+    
+# Text preprocessing function
+def preprocess_text(text):
+    if isinstance(text, str):
+        # Convert to lowercase
+        text = text.lower()
+        # Remove special characters and numbers
+        text = re.sub(r'[^a-zA-Z\s]', '', text)
+        # Tokenise
+        words = word_tokenize(text)
+        # Remove stopwords and lemmatise
+        processed_words = [lemmatizer.lemmatize(word) for word in words if word not in stop_words and len(word) > 2]
+        return ' '.join(processed_words)
+    return ""
+
+# Function to compute coherence scores for different numbers of topics
+def compute_coherence_values(dictionary, corpus, texts, start=2, limit=15, step=1):
+    coherence_values = []
+    model_list = []
+    for num_topics in range(start, limit, step):
+        model = models.LdaModel(corpus=corpus,
+                               id2word=dictionary,
+                               num_topics=num_topics,
+                               random_state=42,
+                               passes=10)
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+    
+    return model_list, coherence_values
+
+# Function to Label Topics using GPT
+def label_topics_with_gpt(topics, model=None):
+    global client
+    
+    if client is None:
+        st.error("OpenAI API key not configured. Please enter it in the sidebar.")
+        return None
+
+    # Default model is gpt-4o unless overridden
+    model_to_use = model or "gpt-4o"
+
+    try:
+        st.info(f"Using model: **{model_to_use}**")
+
+        prompt = (
+            f"Given the following LDA topic words, provide a short, meaningful label for each topic "
+            f"(max 3-4 words):\n\n{topics}\n\nLabels:"
+        )
+
+        response = client.chat.completions.create(
+            model=model_to_use,
+            messages=[
+                {"role": "system", "content": "You are an expert in topic modeling and text analysis. Your task is to provide concise, meaningful labels for topics based on the most representative words."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200
+        )
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        if "gpt-4o" in model_to_use:
+            st.warning("`gpt-4o` unavailable. Falling back to `gpt-3.5-turbo`.")
+            return label_topics_with_gpt(topics, model="gpt-3.5-turbo")
+        else:
+            st.error(f"Error labelling topics with GPT: {e}")
+            return None
+
+
+# Function to create interactive visualisations
+#def create_topic_viz(lda_model, corpus, dictionary):
+ #   # Prepare visualisation
+ #   try:
+ #       vis_data = pyLDAvis.gensim_models.prepare(lda_model, corpus, dictionary)
+ #       
+ #       # Save visualisation to HTML
+ #       html_string = pyLDAvis.prepared_data_to_html(vis_data)
+ #       
+ #       return html_string
+ #   except Exception as e:
+ #       st.error(f"Error creating topic visualisation: {e}")
+ #       return None
+
+def create_topic_viz(lda_model, corpus, dictionary):
+    try:
+        # Make sure to pass the correct parameters
+        vis_data = pyLDAvis.gensim_models.prepare(
+            lda_model, 
+            corpus, 
+            dictionary,
+            sort_topics=False  # Try keeping original topic order
+        )
+        
+        # Set parameters for HTML rendering
+        html_string = pyLDAvis.prepared_data_to_html(
+            vis_data,
+            template_type='general',
+            visid='ldavis_html'  # Giving it a specific ID can help
+        )
+        
+        # For Streamlit, you may need to use components.html to render it properly
+        return html_string
+    except Exception as e:
+        st.error(f"Error creating topic visualization: {e}")
+        # Consider logging the full traceback for debugging
+        import traceback
+        st.error(traceback.format_exc())
+        return None
+
+# Function to find optimal number of topics
+def find_optimal_topics(coherence_values, topic_range):
+    # Find the topic number with the highest coherence score
+    max_index = coherence_values.index(max(coherence_values))
+    return topic_range[max_index]
+
+# Function to perform sentiment analysis
+def analyze_topic_sentiment(lda_model, corpus, texts):
+    """
+    Analyse sentiment for each topic in the LDA model.
+    
+    Parameters:
+    - lda_model: The trained LDA model
+    - corpus: The document-term matrix
+    - texts: List of original texts for sentiment analysis
+    
+    Returns:
+    - DataFrame with topic distributions and sentiment scores
+    """
+    # Get topic distribution for each document
+    topic_distributions = []
+    for i, doc in enumerate(corpus):
+        # Get topic distribution for document
+        topic_dist = lda_model.get_document_topics(doc)
+        # Convert to dict for easier processing
+        topic_dict = {topic_id: prob for topic_id, prob in topic_dist}
+        
+        # Add the original text and sentiment
+        sentiment = TextBlob(texts[i]).sentiment
+        
+        # Create a row with topic probabilities and sentiment
+        row = {
+            'document_id': i,
+            'text': texts[i],
+            'polarity': sentiment.polarity,
+            'subjectivity': sentiment.subjectivity
+        }
+        
+        # Add topic probabilities
+        for topic_id in range(lda_model.num_topics):
+            row[f'topic_{topic_id+1}'] = topic_dict.get(topic_id, 0.0)
+            
+        topic_distributions.append(row)
+    
+    # Convert to DataFrame
+    df_topics = pd.DataFrame(topic_distributions)
+    return df_topics
+
+# Function to visualise sentiment by topic
+def visualize_topic_sentiment(sentiment_df, lda_model):
+    """
+    Create visualisations for sentiment analysis by topic.
+    
+    Parameters:
+    - sentiment_df: DataFrame with topic distributions and sentiment scores
+    - lda_model: The trained LDA model
+    
+    Returns:
+    - Dictionary of plotly figures
+    """
+    figures = {}
+    
+    # Get the dominant topic for each document
+    topic_cols = [col for col in sentiment_df.columns if col.startswith('topic_')]
+    sentiment_df['dominant_topic'] = sentiment_df[topic_cols].idxmax(axis=1)
+    
+    # Replace topic_N with just the number for better display
+    sentiment_df['dominant_topic'] = sentiment_df['dominant_topic'].str.replace('topic_', 'Topic ')
+    
+    # Calculate average sentiment by topic
+    topic_sentiment = sentiment_df.groupby('dominant_topic').agg({
+        'polarity': 'mean',
+        'subjectivity': 'mean',
+        'document_id': 'count'
+    }).reset_index()
+    topic_sentiment = topic_sentiment.rename(columns={'document_id': 'document_count'})
+    
+    # Create polarity by topic bar chart
+    polarity_fig = px.bar(
+        topic_sentiment,
+        x='dominant_topic',
+        y='polarity',
+        color='polarity',
+        color_continuous_scale=px.colors.diverging.RdBu,
+        title='Average Sentiment Polarity by Topic',
+        labels={'dominant_topic': 'Topic', 'polarity': 'Sentiment Polarity'},
+        text='document_count'
+    )
+    polarity_fig.update_traces(texttemplate='%{text} docs', textposition='outside')
+    figures['polarity'] = polarity_fig
+    
+    # Create subjectivity by topic bar chart
+    subjectivity_fig = px.bar(
+        topic_sentiment,
+        x='dominant_topic',
+        y='subjectivity',
+        color='subjectivity',
+        color_continuous_scale='viridis',
+        title='Average Subjectivity by Topic',
+        labels={'dominant_topic': 'Topic', 'subjectivity': 'Subjectivity'},
+        text='document_count'
+    )
+    subjectivity_fig.update_traces(texttemplate='%{text} docs', textposition='outside')
+    figures['subjectivity'] = subjectivity_fig
+    
+    # Create scatter plot of polarity vs subjectivity by topic
+    scatter_fig = px.scatter(
+        sentiment_df,
+        x='polarity',
+        y='subjectivity',
+        color='dominant_topic',
+        title='Sentiment Distribution by Topic',
+        labels={'polarity': 'Sentiment Polarity', 'subjectivity': 'Subjectivity'},
+        hover_data=['text']
+    )
+    figures['scatter'] = scatter_fig
+    
+    return figures
+
+def display_sentiment_analysis(results, unique_id = None):
+    st.subheader("Sentiment Analysis by Topic")
+
+    if 'sentiment_figures' in results:
+        if 'polarity' in results['sentiment_figures']:
+            st.plotly_chart(results['sentiment_figures']['polarity'])
+        else:
+            st.warning("Sentiment polarity figures not found in results.")
+
+        if 'subjectivity' in results['sentiment_figures']:
+            st.plotly_chart(results['sentiment_figures']['subjectivity'])
+        else:
+            st.warning("Sentiment subjectivity figures not found in results.")
+    
+        # Create tabs for detailed view
+        sentiment_tab1, sentiment_tab2 = st.tabs(["Sentiment Distribution", "Raw Sentiment Data"])
+    
+        with sentiment_tab1:
+            if 'scatter' in results['sentiment_figures']:
+                st.plotly_chart(results['sentiment_figures']['scatter'])
+            else:
+                st.warning("Sentiment scatter plot not found in the results.")
+    
+        with sentiment_tab2:
+            # Show the raw sentiment data
+            st.write("Sentiment scores and topic distributions by document:")
+            if 'sentiment_results' in results and not results['sentiment_results'].empty:
+                # Format the dataframe for display
+                display_cols = ['document_id', 'polarity', 'subjectivity', 'dominant_topic']
+                topic_cols = [col for col in results['sentiment_results'].columns if col.startswith('topic_')]
+                display_df = results['sentiment_results'][display_cols + topic_cols].copy()
+        
+                # Highlight the sentiment values
+                st.dataframe(display_df.style.background_gradient(
+                    subset=['polarity'], cmap='RdBu', vmin=-1, vmax=1
+                ).background_gradient(
+                    subset=['subjectivity'], cmap='viridis', vmin=0, vmax=1
+                ))
+        
+                # Add download button for the sentiment data
+                csv = display_df.to_csv(index=False)
+                button_key = f"sentiment_download_{unique_id}" if unique_id else "sentiment_download"
+                st.download_button(
+                    label="Download Sentiment Data",
+                    data=csv,
+                    file_name="topic_sentiment_analysis.csv",
+                    mime="text/csv",
+                    # Add the unique key
+                    key = button_key
+                )
+            else:
+                st.info("Sentiment results dataframe is not available.")
+    else:
+        st.info("Sentiment analysis figures and results are not available.")
+
+# Main analysis function
+def analyze_topics(df, interview_id=None):
+    if interview_id:
+        # Filter data for specific interview
+        filtered_df = df[df['InterviewID'] == interview_id]
+    else:
+        filtered_df = df
+    # Test code
+    if filtered_df.empty:
+        return {'error': 'No data found for the selected interview.'}
+
+    # Combine all answers for the selected interview
+    all_answers = ' '.join(filtered_df['Answers'].astype(str).tolist())
+    
+    # Preprocess text
+    processed_text = preprocess_text(all_answers)
+    
+    # Create a list of tokenized answers for coherence calculation
+    tokenized_answers = [preprocess_text(answer).split() for answer in filtered_df['Answers'].astype(str).tolist() if isinstance(answer, str)]
+
+    if len(tokenized_answers) < 2:
+        return {'warning': 'Topic analysis requires at least two responses. Skipping topic analysis.'}
+    
+    # Create dictionary and corpus
+    dictionary = corpora.Dictionary(tokenized_answers)
+    corpus = [dictionary.doc2bow(text) for text in tokenized_answers]
+    
+    # Compute coherence values for different numbers of topics
+    topic_range = range(2, min(15, len(tokenized_answers) + 1), 1)
+    model_list, coherence_values = compute_coherence_values(dictionary, corpus, tokenized_answers, 
+                                                          start=topic_range[0], 
+                                                          limit=topic_range[-1]+1, 
+                                                          step=1)
+    
+    # Find optimal number of topics
+    optimal_num_topics = find_optimal_topics(coherence_values, list(topic_range))
+    
+    # Create LDA model with optimal number of topics
+    lda_model = models.LdaModel(corpus=corpus,
+                               id2word=dictionary,
+                               num_topics=optimal_num_topics, 
+                               random_state=42,
+                               passes=10)
+    
+    # Get topics and their words
+    topics = lda_model.print_topics(num_words=8)
+    
+    # Format topics for GPT labelling
+    topic_str = "\n".join([f"Topic {i+1}: {topic[1]}" for i, topic in enumerate(topics)])
+
+    # Get original texts for sentiment analysis
+    original_texts = df['Answers'].astype(str).tolist() if interview_id is None else df[df['InterviewID'] == interview_id]['Answers'].astype(str).tolist()
+    
+    # Perform sentiment analysis
+    sentiment_results = analyze_topic_sentiment(lda_model, corpus, original_texts)
+    
+    # Generate sentiment visualisations
+    sentiment_figures = visualize_topic_sentiment(sentiment_results, lda_model)
+    
+    return {
+        'lda_model': lda_model,
+        'corpus': corpus,
+        'dictionary': dictionary,
+        'topics': topics,
+        'topic_str': topic_str,
+        'coherence_values': coherence_values,
+        'topic_range': list(topic_range),
+        'optimal_num_topics': optimal_num_topics,
+        'tokenized_answers': tokenized_answers,
+        'sentiment_results': sentiment_results,
+        'sentiment_figures': sentiment_figures
+    }
+
+#def analyze_topics(df, interview_id=None):
+#    if interview_id:
+#        filtered_df = df[df['InterviewID'] == interview_id]
+#    else:
+#        filtered_df = df
+#    
+#    all_answers = ' '.join(filtered_df['Answers'].astype(str).tolist())
+#    processed_text = preprocess_text(all_answers)
+#    tokenized_answers = [preprocess_text(answer).split() for answer in filtered_df['Answers'].astype(str).tolist() if isinstance(answer, str)]
+#    
+#    dictionary = corpora.Dictionary(tokenized_answers)
+#    corpus = [dictionary.doc2bow(text) for text in tokenized_answers]
+#    
+#    # Handle edge case where we can't create a valid topic range
+#    min_topics = 2
+#    max_topics = min(15, len(tokenized_answers) + 1)
+#    
+#    # If we don't have enough data, use default values
+#    if min_topics >= max_topics:
+#        # Create a default topic range with at least one value
+#        topic_range = [2] 
+#        optimal_num_topics = 2
+#        
+#        # Create minimal LDA model
+#        lda_model = models.LdaModel(
+#            corpus=corpus,
+#            id2word=dictionary,
+#            num_topics=optimal_num_topics, 
+#            random_state=42,
+#            passes=10
+#        )
+#        
+#        topics = lda_model.print_topics(num_words=8)
+#        topic_str = "\n".join([f"Topic {i+1}: {topic[1]}" for i, topic in enumerate(topics)])
+#        
+#        # Return with placeholder coherence values
+#        return {
+#            'lda_model': lda_model,
+#            'corpus': corpus,
+#            'dictionary': dictionary,
+#            'topics': topics,
+#            'topic_str': topic_str,
+#            'coherence_values': [0.0],  # Placeholder
+#            'topic_range': topic_range,
+#            'optimal_num_topics': optimal_num_topics,
+#            'tokenized_answers': tokenized_answers
+#        }
+#    else:
+#        # Normal execution path
+#        topic_range = range(min_topics, max_topics, 1)
+#        
+#       model_list, coherence_values = compute_coherence_values(
+#            dictionary, corpus, tokenized_answers,
+#            start=topic_range[0],
+#            limit=topic_range[-1]+1)
+#        
+#        optimal_num_topics = find_optimal_topics(coherence_values, list(topic_range))
+#        
+#        lda_model = models.LdaModel(
+#            corpus=corpus,
+#            id2word=dictionary,
+#            num_topics=optimal_num_topics, 
+#            random_state=42,
+#            passes=10
+#        )
+#        
+#        topics = lda_model.print_topics(num_words=8)
+#        topic_str = "\n".join([f"Topic {i+1}: {topic[1]}" for i, topic in enumerate(topics)])
+#        
+#        return {
+#            'lda_model': lda_model,
+#            'corpus': corpus,
+#            'dictionary': dictionary,
+#            'topics': topics,
+#            'topic_str': topic_str,
+#            'coherence_values': coherence_values,
+#            'topic_range': list(topic_range),
+#            'optimal_num_topics': optimal_num_topics,
+#            'tokenized_answers': tokenized_answers
+#        }
+
+# Main app logic
+if uploaded_file is not None:
+    # Load and display data
+    df = pd.read_csv(uploaded_file)
+    
+    # Display raw data
+    st.subheader("Raw Data")
+    st.write(df.head())
+    
+    # Get unique interview IDs
+    interview_ids = df['InterviewID'].unique()
+    
+    # Display analysis options
+    st.subheader("Analysis Options")
+    
+    analysis_option = st.radio(
+        "Choose analysis type:",
+        ["All interviews combined", "Individual interview", 
+         "Group by InterviewID"]
+    )
+    
+    if analysis_option == "All interviews combined":
+        if st.button("Run Combined Analysis"):
+            with st.spinner("Running topic analysis on all interviews..."):
+                results = analyze_topics(df)
+                
+                # Display optimal number of topics
+                st.subheader("Topic Modelling Results")
+                st.write(f"**Optimal number of topics:** {results['optimal_num_topics']}")
+                
+                # Plot coherence scores
+                fig = px.line(
+                    x=results['topic_range'],
+                    y=results['coherence_values'],
+                    labels={'x': 'Number of Topics', 'y': 'Coherence Score'},
+                    title='Topic Coherence Scores'
+                )
+                fig.add_vline(x=results['optimal_num_topics'], line_dash="dash", line_color="red")
+                st.plotly_chart(fig)
+                
+                # Display topics
+                st.subheader("Generated Topics")
+                for i, topic in enumerate(results['topics']):
+                    st.write(f"**Topic {i+1}:** {topic[1]}")
+                
+                # Get topic labels using GPT
+                if api_key:
+                    with st.spinner("Labelling topics with GPT..."):
+                        gpt_labels = label_topics_with_gpt(results['topic_str'], model = gpt_model_choice)
+                        if gpt_labels:
+                            st.subheader("GPT-Generated Topic Labels")
+                            st.write(gpt_labels)
+                            
+                            # Let user edit or refine labels
+                            edited_labels = st.text_area("Edit or refine these labels:", gpt_labels)
+                else:
+                    st.warning("Please enter an OpenAI API key in the sidebar to enable GPT topic labeling.")
+                
+                # Create and display interactive topic visualisation
+                st.subheader("Interactive Topic Visualisation")
+                html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
+                if html_viz:
+                    st.components.v1.html(html_viz, height=800)
+        
+                # Display sentiments
+                display_sentiment_analysis(results, unique_id = "combined")
+    
+    elif analysis_option == "Individual interview":
+        selected_interview = st.selectbox("Select Interview ID:", interview_ids)
+        
+        if st.button("Run Interview Analysis"):
+            with st.spinner(f"Running topic analysis for Interview {selected_interview}..."):
+                results = analyze_topics(df, selected_interview)
+
+                if 'error' in results:
+                    st.error(results['error'])
+                elif 'warning' in results:
+                    st.warning(results['warning'])
+                else:
+                    # Display optimal number of topics
+                    st.subheader(f"Topic Modelling Results for Interview {selected_interview}")
+                    st.write(f"**Optimal number of topics:** {results['optimal_num_topics']}")
+                
+                    # Plot coherence scores
+                    fig = px.line(
+                        x=results['topic_range'],
+                        y=results['coherence_values'],
+                        labels={'x': 'Number of Topics', 'y': 'Coherence Score'},
+                        title=f'Topic Coherence Scores for Interview {selected_interview}'
+                    )
+                    fig.add_vline(x=results['optimal_num_topics'], line_dash="dash", line_color="red")
+                    st.plotly_chart(fig)
+                
+                    # Display topics
+                    st.subheader("Generated Topics")
+                    for i, topic in enumerate(results['topics']):
+                        st.write(f"**Topic {i+1}:** {topic[1]}")
+                
+                    # Get topic labels using GPT
+                    if api_key:
+                        with st.spinner("Labelling topics with GPT..."):
+                            gpt_labels = label_topics_with_gpt(results['topic_str'], model = gpt_model_choice)
+                            if gpt_labels:
+                                st.subheader("GPT-Generated Topic Labels")
+                                st.write(gpt_labels)
+                            
+                                # Let user edit or refine labels
+                                edited_labels = st.text_area("Edit or refine these labels:", gpt_labels)
+                    else:
+                        st.warning("Please enter an OpenAI API key in the sidebar to enable GPT topic labeling.")
+                
+                    # Create and display interactive topic visualisation
+                    st.subheader("Interactive Topic Visualisation")
+                    html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
+                    if html_viz:
+                        st.components.v1.html(html_viz, height=800)
+         
+                    # Display sentiments
+                    display_sentiment_analysis(results, unique_id=f"interview_{selected_interview}")
+        
+    elif analysis_option == "Group by InterviewID":
+        if st.button("Run Group Analysis"):
+            # Create tabs for comparison
+            tab1, tab2 = st.tabs(["Optimal Topics by Interview", "Coherence Comparison"])
+            
+            with st.spinner("Analysing topics across all interviews..."):
+                all_results = {}
+                optimal_topics = {}
+                coherence_data = []
+                
+                # Process each interview
+                for interview_id in interview_ids:
+                    results = analyze_topics(df, interview_id)
+
+                    all_results[interview_id] = results
+
+                    if 'optimal_num_topics' in results:
+                        optimal_topics[interview_id] = results['optimal_num_topics']
+                    
+                        # Collect coherence data for comparison
+                        for i, num_topics in enumerate(results['topic_range']):
+                            coherence_data.append({
+                                'InterviewID': interview_id,
+                                'Number of Topics': num_topics,
+                                'Coherence Score': results['coherence_values'][i]
+                            })
+                    elif 'warning' in results:
+                        st.warning(f"Interview {interview_id}:{results['warning']}")
+                    elif 'error' in results:
+                        st.error(f"Interview {interview_id}: {results['error']}")
+                
+                # Display optimal topics by interview
+                with tab1:
+                    st.subheader("Optimal Number of Topics by Interview")
+                    if optimal_topics:
+                        # Create bar chart
+                        fig = px.bar(
+                            x=list(optimal_topics.keys()),
+                            y=list(optimal_topics.values()),
+                            labels={'x': 'Interview ID', 'y': 'Optimal Number of Topics'},
+                            title='Optimal Number of Topics by Interview'
+                        )
+                        st.plotly_chart(fig)
+                    
+                        # Display as table
+                        opt_topics_df = pd.DataFrame({
+                            'InterviewID': list(optimal_topics.keys()),
+                            'Optimal Number of Topics': list(optimal_topics.values())
+                        })
+                        st.write(opt_topics_df)
+                    else:
+                        st.info("No interviews had enough responses for topic analysis.")
+                
+                # Display coherence comparison
+                with tab2:
+                    st.subheader("Coherence Score Comparison")
+
+                    if coherence_data: 
+                        coherence_df = pd.DataFrame(coherence_data)
+                    
+                        # Create line chart for coherence comparison
+                        fig = px.line(
+                            coherence_df,
+                            x='Number of Topics',
+                            y='Coherence Score',
+                            color='InterviewID',
+                            title='Coherence Scores Across Interviews'
+                        )
+                        st.plotly_chart(fig)
+                    else:
+                        st.info("Coherence data is not available due to insufficient responses in some interviews.")
+                
+                # Create detailed analysis for each interview
+                st.subheader("Detailed Analysis by Interview")
+                
+                for interview_id, results in all_results.items():
+                    #with st.expander(f"Interview {interview_id} - {results['optimal_num_topics']} Topics"):
+                    with st.expander(f"Interview {interview_id} - {'{} Topics'.format(results.get('optimal_num_topics', 'N/A'))}"):    
+                        if 'topics' in results:
+                            # Display topics      
+                            st.write("**Topics:**")
+                            for i, topic in enumerate(results['topics']):
+                                st.write(f"Topic {i+1}: {topic[1]}")
+                        
+                            # Get topic labels using GPT if API key is provided
+                            if api_key and 'topic_str' in results:
+                                with st.spinner(f"Labelling topics for Interview {interview_id}..."):
+                                    gpt_labels = label_topics_with_gpt(results['topic_str'], model = gpt_model_choice)
+                                    if gpt_labels:
+                                        st.write("**GPT-Generated Labels:**")
+                                        st.write(gpt_labels)
+                            elif api_key:
+                                st.warning("Topic string not available for GPT labelling.")
+                            else:
+                                st.warning("Please enter an OpenAI API key in the sidebar to enable GPT topic labelling.")
+                        
+                        if 'lda_model' in results and 'corpus' in results and 'dictionary' in results:
+                            # Display interactive visualization
+                            html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
+                            if html_viz:
+                                st.components.v1.html(html_viz, height=600)
+
+                        elif 'warning' in results:
+                            st.warning(f"Interview {interview_id}: {results['warning']}")
+                        elif 'error' in results:
+                            st.error(f"Interview {interview_id}: {results['error']}")
+                        # Add this after displaying other results
+                        display_sentiment_analysis(results, unique_id=f"group_{interview_id}")
+
+# Add a custom topic labelling section
+st.subheader("Custom Topic Labelling")
+
+with st.expander("Label topics manually or with AI assistants"):
+    topic_input = st.text_area("Enter topic words to label (each topic on a new line):", 
+                             placeholder="Topic 1: 0.010*\"data\" + 0.008*\"analysis\" + 0.006*\"research\" + 0.005*\"information\"")
+    
+    assistant_choice = st.radio("Choose AI assistant for labelling:", ["GPT (OpenAI)", "Copilot (if configured)"])
+
+    # Model selection for GPT
+    gpt_model = None
+    if assistant_choice == "GPT (OpenAI)":
+        gpt_model = st.selectbox(
+            "Choose GPT model:",
+            options=["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
+            index=0
+        )
+    
+    if st.button("Generate Labels"):
+        if topic_input:
+            if assistant_choice == "GPT (OpenAI)":
+                if api_key:
+                    with st.spinner("Generating labels with GPT..."):
+                        gpt_labels = label_topics_with_gpt(topic_input, model = gpt_model)
+                        if gpt_labels:
+                            st.write("**Generated Labels:**")
+                            st.write(gpt_labels)
+                            
+                            # Add option to save labels
+                            st.download_button(
+                                label="Download Labels",
+                                data=gpt_labels,
+                                file_name="topic_labels.txt",
+                                mime="text/plain"
+                            )
+                else:
+                    st.warning("Please enter an OpenAI API key in the sidebar to use GPT labeling.")
+            elif assistant_choice == "Copilot (if configured)":
+                st.info("Copilot integration would require additional implementation with your specific Copilot setup.")
+                st.write("This would typically involve setting up an API connection to your Copilot endpoint.")
+        else:
+            st.warning("Please enter topic words to label.")
+
+# Add a section for uploading and saving models
+#with st.sidebar:
+#    st.header("Save/Load Analysis")
+#    
+#    # Save model option
+#    if st.button("Save Current Analysis"):
+#        if 'results' in locals():
+#            try:
+#                # Serialise the results
+#                buffer = BytesIO()
+#                pickle.dump(results, buffer)
+#                buffer.seek(0)
+#                
+#                # Create download button
+#                st.download_button(
+#                    label="Download Analysis",
+#                    data=buffer,
+#                    file_name="topic_analysis.pkl",
+#                    mime="application/octet-stream"
+#                )
+#            except Exception as e:
+#                st.error(f"Error saving analysis: {e}")
+#    
+#    # Load model option
+#    saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
+#    if saved_model:
+#        try:
+#            results = pickle.load(saved_model)
+#            st.success("Analysis loaded successfully!")
+#        except Exception as e:
+#            st.error(f"Error loading analysis: {e}")
+
+with st.sidebar:
+    st.header("Save/Load Analysis")
+    
+    # Save functionality
+    if st.button("Save Current Analysis"):
+        # Check for results in various possible places
+        if 'results' in st.session_state:
+            results_to_save = st.session_state.results
+        elif 'results' in globals():
+            results_to_save = results
+        else:
+            results_to_save = None
+            
+        if results_to_save is not None:
+            try:
+                buffer = BytesIO()
+                pickle.dump(results_to_save, buffer)
+                buffer.seek(0)
+                st.download_button(
+                    label="Download Analysis",
+                    data=buffer,
+                    file_name="topic_analysis.pkl",
+                    mime="application/octet-stream"
+                )
+            except Exception as e:
+                st.error(f"Error saving analysis: {e}")
+        else:
+            st.error("No analysis results found to save.")
+    
+    # Load functionality
+    saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
+    if saved_model:
+        try:
+            loaded_results = pickle.load(saved_model)
+            # Store in both session state and global variable for compatibility
+            st.session_state.results = loaded_results
+            # Use globals() to set the variable in the global scope
+            globals()['results'] = loaded_results
+            st.success("Analysis loaded successfully!")
+        except Exception as e:
+            st.error(f"Error loading analysis: {e}")
+
+# Add footer with information
+st.markdown("---")
+st.markdown("""
+**About this app:**
+This tool uses Latent Dirichlet Allocation (LDA) to extract topics from interview data. 
+It automatically determines the optimal number of topics based on coherence scores and 
+can leverage GPT or other AI assistants to generate human-readable labels for the topics.
+""")
