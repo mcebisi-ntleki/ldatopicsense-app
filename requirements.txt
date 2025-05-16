@@ -6,7 +6,7 @@ scikit-learn
 openai
 seaborn
 nltk
-genism
+gensim
 pyngrok
 transformers
 accelerate
