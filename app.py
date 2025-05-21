@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import re
 import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
+#from nltk.corpus import stopwords
+#from nltk.tokenize import word_tokenize
+#from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import CountVectorizer
 from gensim import corpora, models
 from gensim.models import CoherenceModel
@@ -44,6 +44,9 @@ nltk.data.path.append(nltk_data_dir)
 # Create the directory if it doesn't exist
 if not os.path.exists(nltk_data_dir):
     os.makedirs(nltk_data_dir)
+
+# 1. ALWAYS THE FIRST STREAMLIT COMMAND:
+st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
 
 # Download NLTK resources if they are not already present
 # Use st.cache_resource to avoid re-downloading on every rerun if possible,
@@ -82,21 +85,21 @@ lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
 # Download necessary NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-    nltk.data.find('corpora/stopwords')
-    nltk.data.find('corpora/wordnet')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('wordnet')
+#try:
+#    nltk.data.find('tokenizers/punkt')
+#    nltk.data.find('corpora/stopwords')
+#    nltk.data.find('corpora/wordnet')
+#except LookupError:
+#    nltk.download('punkt')
+#    nltk.download('stopwords')
+#    nltk.download('wordnet')
 
 # Initialise lemmatiser and stopwords
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
 # App title and description
-st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
+#st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
 
 st.title("Interview Topic Analysis Dashboard")
 st.markdown("""
