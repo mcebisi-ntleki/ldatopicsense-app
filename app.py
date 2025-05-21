@@ -31,15 +31,55 @@ from textblob import TextBlob
 load_dotenv()
 
 # For deployment on Streamlit Community Cloud
-nltk_data_path = os.path.join(os.path.dirname(__file__), 'nltk_data')
-if not os.path.exists(nltk_data_path):
-    os.makedirs(nltk_data_path)
-nltk.data.path.append(nltk_data_path)
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', download_dir=nltk_data_path)
+# --- NLTK Data Management ---
+# Define a directory to store NLTK data within our app's environment
+# This will be created in the application's root directory on Streamlit Community Cloud
+nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
+
+# Add this directory to NLTK's data path
+# This ensures NLTK looks for data here first
+nltk.data.path.append(nltk_data_dir)
+
+# Create the directory if it doesn't exist
+if not os.path.exists(nltk_data_dir):
+    os.makedirs(nltk_data_dir)
+
+# Download NLTK resources if they are not already present
+# Use st.cache_resource to avoid re-downloading on every rerun if possible,
+# though the try-except block handles this more fundamentally.
+@st.cache_resource
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        print("Downloading punkt tokenizer...") # For debugging in logs
+        nltk.download('punkt', download_dir=nltk_data_dir)
+
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        print("Downloading stopwords corpus...")
+        nltk.download('stopwords', download_dir=nltk_data_dir)
+
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        print("Downloading wordnet corpus...")
+        nltk.download('wordnet', download_dir=nltk_data_dir)
+
+# Call the function to ensure data is present
+download_nltk_data()
+
+# --- End NLTK Data Management ---
+
+# Now you can safely import and use NLTK components
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize # If you use this explicitly
+
+lemmatizer = WordNetLemmatizer()
+stop_words = set(stopwords.words('english'))
 
 # Download necessary NLTK data
 try:
