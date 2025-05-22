@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re
-#import nltk
-#from nltk.corpus import stopwords
-#from nltk.tokenize import word_tokenize
-#from nltk.stem import WordNetLemmatizer
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import CountVectorizer
 from gensim import corpora, models
 from gensim.models import CoherenceModel
@@ -19,7 +19,7 @@ import openai
 from openai import OpenAI, AzureOpenAI
 import plotly.express as px
 import plotly.graph_objects as go
-#import os
+import os
 from dotenv import load_dotenv
 import pickle
 import base64
@@ -43,7 +43,7 @@ import os
 # This will be created in the application's root directory on Streamlit Community Cloud
 nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
 
-# Add this directory to NLTK's data path
+# Add the directory to NLTK's data path
 # This ensures NLTK looks for data here first
 nltk.data.path.append(nltk_data_dir)
 
@@ -58,6 +58,17 @@ if not os.path.exists(nltk_data_dir):
 # though the try-except block handles this more fundamentally.
 @st.cache_resource
 def download_nltk_data():
+    # Attempt to download 'punkt_tab' as explicitly requested by the ensuing error
+    try:
+        nltk.data.find('tokenizers/punkt_tab') # Check for punkt_tab specifically
+    except LookupError:
+        print("Downloading punkt_tab tokenizer...") # For debugging in logs
+        nltk.download('punkt_tab', download_dir=nltk_data_dir) # Download punkt_tab
+
+    # Keep the original 'punkt' download as well, just in case,
+    # while recognising that 'punkt_tab' seems to be the direct missing one.
+    # If the app starts working with just 'punkt_tab', we might remove this block.
+
     try:
         nltk.data.find('tokenizers/punkt')
     except LookupError:
@@ -81,30 +92,8 @@ download_nltk_data()
 
 # --- End NLTK Data Management ---
 
-# Now you can safely import and use NLTK components
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize # If you use this explicitly
-
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
-
-# Download necessary NLTK data
-#try:
-#    nltk.data.find('tokenizers/punkt')
-#    nltk.data.find('corpora/stopwords')
-#    nltk.data.find('corpora/wordnet')
-#except LookupError:
-#    nltk.download('punkt')
-#    nltk.download('stopwords')
-#    nltk.download('wordnet')
-
-# Initialise lemmatiser and stopwords
-#lemmatizer = WordNetLemmatizer()
-#stop_words = set(stopwords.words('english'))
-
-# App title and description
-#st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
 
 st.title("Interview Topic Analysis Dashboard")
 st.markdown("""
