@@ -1035,79 +1035,6 @@ with st.expander("Label topics manually or with AI assistants"):
         else:
             st.warning("Please enter topic words to label.")
 
-# Add a section for uploading and saving models
-#with st.sidebar:
-#    st.header("Save/Load Analysis")
-#    
-#    # Save model option
-#    if st.button("Save Current Analysis"):
-#        if 'results' in locals():
-#            try:
-#                # Serialise the results
-#                buffer = BytesIO()
-#                pickle.dump(results, buffer)
-#                buffer.seek(0)
-#                
-#                # Create download button
-#                st.download_button(
-#                    label="Download Analysis",
-#                    data=buffer,
-#                    file_name="topic_analysis.pkl",
-#                    mime="application/octet-stream"
-#                )
-#            except Exception as e:
-#                st.error(f"Error saving analysis: {e}")
-#    
-#    # Load model option
-#    saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
-#    if saved_model:
-#        try:
-#            results = pickle.load(saved_model)
-#            st.success("Analysis loaded successfully!")
-#        except Exception as e:
-#            st.error(f"Error loading analysis: {e}")
-
-#with st.sidebar:
-#    st.header("Save/Load Analysis")
-#    
-#    # Save functionality
-#    if st.button("Save Current Analysis"):
-#        # Check for results in various possible places
-#        if 'results' in st.session_state:
-#            results_to_save = st.session_state.results
-#        elif 'results' in globals():
-#            results_to_save = results
-#        else:
-#            results_to_save = None
-#            
-#        if results_to_save is not None:
-#            try:
-#                buffer = BytesIO()
-#                pickle.dump(results_to_save, buffer)
-#                buffer.seek(0)
-#                st.download_button(
-#                    label="Download Analysis",
-#                    data=buffer,
-#                    file_name="topic_analysis.pkl",
-#                    mime="application/octet-stream"
-#                )
-#            except Exception as e:
-#                st.error(f"Error saving analysis: {e}")
-#        else:
-#            st.error("No analysis results found to save.")
-#    
-#    # Load functionality
-#    saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
-#    if saved_model:
-#        try:
-#            loaded_results = pickle.load(saved_model)
-#            # Store in both session state and global variable for compatibility
-#            st.session_state.results = loaded_results
-#            # Use globals() to set the variable in the global scope
-#            globals()['results'] = loaded_results
-#            st.success("Analysis loaded successfully!")
-#        except Exception as e:
-#            st.error(f"Error loading analysis: {e}")
 ######################################################################
 with st.sidebar:
     st.header("Save/Load Analysis")
@@ -1115,8 +1042,8 @@ with st.sidebar:
     # Save functionality
     if st.button("Save Current Analysis"):
         # Debug: Show what variables are available
-        st.write("Debug - Session state keys:", list(st.session_state.keys()))
-        st.write("Debug - Global variables:", [k for k in globals().keys() if not k.startswith('_')])
+        #st.write("Debug - Session state keys:", list(st.session_state.keys()))
+        #st.write("Debug - Global variables:", [k for k in globals().keys() if not k.startswith('_')])
         
         # Check for results in various possible places
         results_to_save = None
@@ -1221,7 +1148,7 @@ Adjust this slider to explore different aspects of your topics and discover term
 This visualisation is generated using pyLDAvis with the gensim-models adapter.
 """
 
-# Display the 
+# Display the Documentation Resources
 with st.sidebar:
     st.markdown("### Documentation Resources")
     #st.markdown(get_markdown_download_link(pyldavis_docs), unsafe_allow_html=True)
