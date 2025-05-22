@@ -1065,19 +1065,73 @@ with st.expander("Label topics manually or with AI assistants"):
 #        except Exception as e:
 #            st.error(f"Error loading analysis: {e}")
 
+#with st.sidebar:
+#    st.header("Save/Load Analysis")
+#    
+#    # Save functionality
+#    if st.button("Save Current Analysis"):
+#        # Check for results in various possible places
+#        if 'results' in st.session_state:
+#            results_to_save = st.session_state.results
+#        elif 'results' in globals():
+#            results_to_save = results
+#        else:
+#            results_to_save = None
+#            
+#        if results_to_save is not None:
+#            try:
+#                buffer = BytesIO()
+#                pickle.dump(results_to_save, buffer)
+#                buffer.seek(0)
+#                st.download_button(
+#                    label="Download Analysis",
+#                    data=buffer,
+#                    file_name="topic_analysis.pkl",
+#                    mime="application/octet-stream"
+#                )
+#            except Exception as e:
+#                st.error(f"Error saving analysis: {e}")
+#        else:
+#            st.error("No analysis results found to save.")
+#    
+#    # Load functionality
+#    saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
+#    if saved_model:
+#        try:
+#            loaded_results = pickle.load(saved_model)
+#            # Store in both session state and global variable for compatibility
+#            st.session_state.results = loaded_results
+#            # Use globals() to set the variable in the global scope
+#            globals()['results'] = loaded_results
+#            st.success("Analysis loaded successfully!")
+#        except Exception as e:
+#            st.error(f"Error loading analysis: {e}")
+######################################################################
 with st.sidebar:
     st.header("Save/Load Analysis")
     
     # Save functionality
     if st.button("Save Current Analysis"):
+        # Debug: Show what variables are available
+        st.write("Debug - Session state keys:", list(st.session_state.keys()))
+        st.write("Debug - Global variables:", [k for k in globals().keys() if not k.startswith('_')])
+        
         # Check for results in various possible places
-        if 'results' in st.session_state:
-            results_to_save = st.session_state.results
-        elif 'results' in globals():
-            results_to_save = results
-        else:
-            results_to_save = None
-            
+        results_to_save = None
+        
+        # Try different common variable names
+        possible_names = ['results', 'analysis_results', 'topic_results', 'model_results']
+        
+        for name in possible_names:
+            if name in st.session_state:
+                results_to_save = st.session_state[name]
+                st.write(f"Found results in session_state.{name}")
+                break
+            elif name in globals():
+                results_to_save = globals()[name]
+                st.write(f"Found results in globals().{name}")
+                break
+        
         if results_to_save is not None:
             try:
                 buffer = BytesIO()
@@ -1107,6 +1161,7 @@ with st.sidebar:
         except Exception as e:
             st.error(f"Error loading analysis: {e}")
 
+#######################################################################
 # Markdown documentation content
 pyldavis_docs = """
 # Understanding pyLDAvis Visualisations
