@@ -1039,7 +1039,7 @@ with st.expander("Label topics manually or with AI assistants"):
 with st.sidebar:
     st.header("Save/Load Analysis")
     
-    # Save functionality
+    # Save functionality: Current Analysis Button and Download
     if st.button("Save Current Analysis"):
         # Debug: Show what variables are available
         #st.write("Debug - Session state keys:", list(st.session_state.keys()))
@@ -1077,57 +1077,57 @@ with st.sidebar:
         else:
             st.error("No analysis results found to save.")
     
-    # Load functionality
-    saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
-    if saved_model:
-        try:
-            loaded_results = pickle.load(saved_model)
-            # Store in both session state and global variable for compatibility
-            st.session_state.results = loaded_results
-            # Use globals() to set the variable in the global scope to maintain consistency
-            globals()['results'] = loaded_results
-            st.success("Analysis loaded successfully!")
+# Load functionality: Load Saved Analysis File Uploader
+saved_model = st.file_uploader("Load Saved Analysis", type=['pkl'])
+if saved_model:
+    try:
+        loaded_results = pickle.load(saved_model)
+        # Store in both session state and global variable for compatibility
+        st.session_state.results = loaded_results
+        # Use globals() to set the variable in the global scope to maintain consistency
+        globals()['results'] = loaded_results
+        st.success("Analysis loaded successfully!")
 
-            st.subheader("Loaded Analysis Contents:")
-            if isinstance(loaded_results, dict):
-                st.write("Loaded data is a dictionary.")
-                for key, value in loaded_results.items():
-                    st.write(f"**Key:** `{key}`")
-                    st.write(f"**Type:** `{type(value)}`")
-                    # Displaying different types
-                    if isinstance(value, (str, int, float, bool)):
-                        st.write(f"**Value:** `{value}`")
-                    elif isinstance(value, (list, tuple, set)):
-                        st.write(f"**Length:** `{len(value)}`")
-                        st.json(list(value[:5])) # Show first 5 items if it's a list/tuple/set
-                        if len(value) > 5:
-                            st.write("...(showing first 5 items)")
-                    elif hasattr(value, 'head') and hasattr(value, 'shape'): # Likely a Pandas DataFrame
-                        st.write(f"**Shape:** `{value.shape}`")
-                        st.dataframe(value.head())
-                        st.write("...(showing first 5 rows)")
-                    elif hasattr(value, '__dict__'): # Custom object
-                        st.write(f"**Attributes:** `{value.__dict__.keys()}`")
-                        # You might need to add specific display logic for your custom objects
-                        # st.write(value) # This might print a messy representation
-                    else:
-                        st.write(f"**Value:** `{str(value)[:200]}`...") # Generic display for other types
-            elif isinstance(loaded_results, (list, tuple, set)):
-                st.write(f"Loaded data is a {type(loaded_results).__name__} with {len(loaded_results)} items.")
-                st.json(list(loaded_results[:5])) # Show first 5 items
-                if len(loaded_results) > 5:
-                    st.write("...(showing first 5 items)")
-            elif hasattr(loaded_results, 'head') and hasattr(loaded_results, 'shape'): # Likely a Pandas DataFrame
-                st.write("Loaded data is likely a Pandas DataFrame.")
-                st.write(f"**Shape:** `{loaded_results.shape}`")
-                st.dataframe(loaded_results.head())
-                st.write("...(showing first 5 rows)")
-            else:
-                st.write(f"Loaded data type: `{type(loaded_results)}`")
-                st.write("Full content (may be truncated for large objects):")
-                st.write(str(loaded_results)[:1000]) # Display a portion of the content
-        except Exception as e:
-            st.error(f"Error loading analysis: {e}")
+        st.subheader("Loaded Analysis Contents:")
+        if isinstance(loaded_results, dict):
+            st.write("Loaded data is a dictionary.")
+            for key, value in loaded_results.items():
+                st.write(f"**Key:** `{key}`")
+                st.write(f"**Type:** `{type(value)}`")
+                # Displaying different types
+                if isinstance(value, (str, int, float, bool)):
+                    st.write(f"**Value:** `{value}`")
+                elif isinstance(value, (list, tuple, set)):
+                    st.write(f"**Length:** `{len(value)}`")
+                    st.json(list(value[:5])) # Show first 5 items if it's a list/tuple/set
+                    if len(value) > 5:
+                        st.write("...(showing first 5 items)")
+                elif hasattr(value, 'head') and hasattr(value, 'shape'): # Likely a Pandas DataFrame
+                    st.write(f"**Shape:** `{value.shape}`")
+                    st.dataframe(value.head())
+                    st.write("...(showing first 5 rows)")
+                elif hasattr(value, '__dict__'): # Custom object
+                    st.write(f"**Attributes:** `{value.__dict__.keys()}`")
+                    # You might need to add specific display logic for your custom objects
+                    # st.write(value) # This might print a messy representation
+                else:
+                    st.write(f"**Value:** `{str(value)[:200]}`...") # Generic display for other types
+        elif isinstance(loaded_results, (list, tuple, set)):
+            st.write(f"Loaded data is a {type(loaded_results).__name__} with {len(loaded_results)} items.")
+            st.json(list(loaded_results[:5])) # Show first 5 items
+            if len(loaded_results) > 5:
+                st.write("...(showing first 5 items)")
+        elif hasattr(loaded_results, 'head') and hasattr(loaded_results, 'shape'): # Likely a Pandas DataFrame
+            st.write("Loaded data is likely a Pandas DataFrame.")
+            st.write(f"**Shape:** `{loaded_results.shape}`")
+            st.dataframe(loaded_results.head())
+            st.write("...(showing first 5 rows)")
+        else:
+            st.write(f"Loaded data type: `{type(loaded_results)}`")
+            st.write("Full content (may be truncated for large objects):")
+            st.write(str(loaded_results)[:1000]) # Display a portion of the content
+    except Exception as e:
+        st.error(f"Error loading analysis: {e}")
 
 #######################################################################
 # Assuming you have loaded the analysis in the sidebar
@@ -1243,27 +1243,27 @@ st.markdown(
 # Assuming you have loaded the analysis in the sidebar
 # Now, in the main part of your app, display the results
 
-if 'results' in st.session_state and st.session_state.results is not None:
-    st.title("Your Analysis Dashboard")
-
-    results = st.session_state.results # Get the loaded results
-
-    if 'topic_model' in results:
-        st.subheader("Topic Model Details:")
-        # Display some info about your topic model
-        # e.g., st.write(f"Number of topics: {results['topic_model'].n_components}")
-        st.write("Topic model object is present.")
-        # You would interact with your topic model object here
-        # Example: st.write(results['topic_model'].get_params())
-
-    if 'documents_df' in results:
-        st.subheader("Processed Documents:")
-        st.dataframe(results['documents_df'].head())
-        st.write(f"Total documents: {len(results['documents_df'])}")
-
-    # Add more display logic based on what's in your 'results' object
-else:
-    st.info("Please load an analysis from the sidebar to view results.")
+#if 'results' in st.session_state and st.session_state.results is not None:
+#    st.title("Your Analysis Dashboard")#
+#
+#    results = st.session_state.results # Get the loaded results
+#
+#    if 'topic_model' in results:
+#        st.subheader("Topic Model Details:")
+#        # Display some info about your topic model
+#        # e.g., st.write(f"Number of topics: {results['topic_model'].n_components}")
+#        st.write("Topic model object is present.")
+#        # You would interact with your topic model object here
+#        # Example: st.write(results['topic_model'].get_params())
+#
+#    if 'documents_df' in results:
+#        st.subheader("Processed Documents:")
+#        st.dataframe(results['documents_df'].head())
+#        st.write(f"Total documents: {len(results['documents_df'])}")
+#
+#    # Add more display logic based on what's in your 'results' object
+#else:
+#    st.info("Please load an analysis from the sidebar to view results.")
 
 # Add footer with information
 st.markdown("---")
