@@ -634,6 +634,8 @@ if uploaded_file is not None:
         if st.button("Run Combined Analysis"):
             with st.spinner("Running topic analysis on all interviews..."):
                 results = analyze_topics(df)
+                # Store results in session state for access across the app
+                st.session_state.results = results
                 
                 # Display optimal number of topics
                 st.subheader("Topic Modelling Results")
