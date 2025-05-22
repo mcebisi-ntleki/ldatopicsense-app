@@ -669,7 +669,7 @@ if uploaded_file is not None:
                 
                 # Create and display interactive topic visualisation
                 if st.session_state.first_visit:
-                    st.info("📌 **First time using the Topic Visualizer?** Follow the brief tour below to understand what you're seeing.")
+                    st.info(" **First time using the Topic Visualizer?** Follow the brief tour below to understand what you're seeing.")
     
                     st.markdown("""
                     ### Brief Tour of the Topic Visualization
@@ -687,7 +687,7 @@ if uploaded_file is not None:
                 html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
                 if html_viz:
                     # Add expandable help section before the visualisation
-                    with st.expander("📊 How to interpret this visualisation"):
+                    with st.expander(" How to interpret this visualisation"):
                         st.markdown("""
                         ### Quick Guide
                         - **Topic bubbles**: Size shows topic prevalence, distance shows semantic similarity
@@ -701,7 +701,7 @@ if uploaded_file is not None:
                     # Display the visualisation
                     st.components.v1.html(html_viz, height=800)
         
-                with st.expander("📊 How to interpret sentiment analysis"):
+                with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
                     ### Quick Guide
                     - Compound score: Overall sentiment from -1 (negative) to +1 (positive)
@@ -721,7 +721,7 @@ if uploaded_file is not None:
     
                 with col1:
                     st.download_button(
-                        label="📄 Download Full Sentiment Analysis Documentation",
+                        label=" Download Full Sentiment Analysis Documentation",
                         data=sentiment_docs,
                         file_name="Sentiment_Analysis_Guide.md",
                         mime="text/markdown",
@@ -730,7 +730,7 @@ if uploaded_file is not None:
     
                 with col2:
                     st.download_button(
-                        label="📝 Download as Plain Text",
+                        label=" Download as Plain Text",
                         data=sentiment_docs,
                         file_name="Sentiment_Analysis_Guide.txt",
                         mime="text/plain",
@@ -786,7 +786,7 @@ if uploaded_file is not None:
                     html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
                     if html_viz:
                         # Add expandable help section before the visualisation
-                        with st.expander("📊 How to interpret this visualisation"):
+                        with st.expander("How to interpret this visualisation"):
                             st.markdown("""
                             ### Quick Guide
                             - **Topic bubbles**: Size shows topic prevalence, distance shows semantic similarity
@@ -799,7 +799,7 @@ if uploaded_file is not None:
                             
                         st.components.v1.html(html_viz, height = 800)
     
-                    with st.expander("📊 How to interpret sentiment analysis"):
+                    with st.expander("How to interpret sentiment analysis"):
                         st.markdown("""
                         ### Quick Guide
                         - Compound score: Overall sentiment from -1 (negative) to +1 (positive)
@@ -818,7 +818,7 @@ if uploaded_file is not None:
 
                     with col1:
                         st.download_button(
-                        label="📄 Download Full Documentation",
+                        label=" Download Full Documentation",
                         data=sentiment_docs,
                         file_name="Sentiment_Analysis_Guide.md",
                         mime="text/markdown",
@@ -827,7 +827,7 @@ if uploaded_file is not None:
 
                     with col2:
                         st.download_button(
-                        label="📝 Download as Plain Text",
+                        label=" Download as Plain Text",
                         data=sentiment_docs,
                         file_name="Sentiment_Analysis_Guide.txt",
                         mime="text/plain",
@@ -935,7 +935,7 @@ if uploaded_file is not None:
                             html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
                             if html_viz:
                                 # Add expandable help section before the visualization
-                                st.subheader("📊 How to interpret this visualisation")
+                                st.subheader(" How to interpret this visualisation")
                                 st.markdown("""
                                     ### Quick Guide
                                     - **Topic bubbles**: Size shows topic prevalence, distance shows semantic similarity
@@ -954,7 +954,7 @@ if uploaded_file is not None:
                         elif 'error' in results:
                             st.error(f"Interview {interview_id}: {results['error']}")
                         
-                        st.subheader("📊 How to interpret sentiment analysis")
+                        st.subheader(" How to interpret sentiment analysis")
                         st.markdown("""
                         ### Quick Guide
                         - Compound score: Overall sentiment from -1 (negative) to +1 (positive)
@@ -1109,10 +1109,10 @@ with st.sidebar:
 
 # Markdown documentation content
 pyldavis_docs = """
-# Understanding pyLDAvis Visualizations
+# Understanding pyLDAvis Visualisations
 
 ## Overview
-The pyLDAvis visualization displays topic modeling results in an interactive format. It helps you explore the topics discovered by the LDA algorithm and the terms most associated with each topic.
+The pyLDAvis visualisation displays topic modelling results in an interactive format. It helps you explore the topics discovered by the LDA algorithm and the terms most associated with each topic.
 
 ## Key Components
 
@@ -1126,7 +1126,7 @@ The pyLDAvis visualization displays topic modeling results in an interactive for
 - **Blue bars**: Overall term frequency in the corpus
 - **Red bars**: Term relevance to the selected topic
 
-## Interpreting the Visualization
+## Interpreting the Visualisation
 
 ### Common Observations
 
@@ -1156,7 +1156,7 @@ Adjust this slider to explore different aspects of your topics and discover term
 
 - Explore different topics by clicking on different bubbles
 - Adjust the λ slider to find different perspectives on each topic
-- Consider the visualization alongside other evaluation metrics for a complete understanding
+- Consider the visualisation alongside other evaluation metrics for a complete understanding
 - Remember that topic coherence is subjective and context-dependent
 
 ## Technical Implementation
@@ -1171,7 +1171,7 @@ with st.sidebar:
     
     # For plain text option
     st.download_button(
-        label="📄 Download as Plain Text",
+        label="Download as Plain Text",
         data=pyldavis_docs,
         file_name="pyLDAvis_Guide.txt",
         mime="text/plain",
