@@ -100,8 +100,8 @@ stop_words = set(stopwords.words('english'))
 #    nltk.download('wordnet')
 
 # Initialise lemmatiser and stopwords
-lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words('english'))
+#lemmatizer = WordNetLemmatizer()
+#stop_words = set(stopwords.words('english'))
 
 # App title and description
 #st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
