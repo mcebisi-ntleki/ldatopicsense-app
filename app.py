@@ -1130,6 +1130,32 @@ with st.sidebar:
             st.error(f"Error loading analysis: {e}")
 
 #######################################################################
+# Assuming you have loaded the analysis in the sidebar
+# Now, in the main part of your app:
+
+if 'results' in st.session_state and st.session_state.results is not None:
+    st.title("Your Analysis Dashboard")
+
+    results = st.session_state.results # Get the loaded results
+
+    if 'topic_model' in results:
+        st.subheader("Topic Model Details:")
+        # Display some info about your topic model
+        # e.g., st.write(f"Number of topics: {results['topic_model'].n_components}")
+        st.write("Topic model object is present.")
+        # You would interact with your topic model object here
+        # Example: st.write(results['topic_model'].get_params())
+
+    if 'documents_df' in results:
+        st.subheader("Processed Documents:")
+        st.dataframe(results['documents_df'].head())
+        st.write(f"Total documents: {len(results['documents_df'])}")
+
+    # Add more display logic based on what's in your 'results' object
+else:
+    st.info("Please load an analysis from the sidebar to view results.")
+
+#######################################################################
 # Markdown documentation content
 pyldavis_docs = """
 # Understanding pyLDAvis Visualisations
@@ -1209,28 +1235,6 @@ with st.sidebar:
         mime = "text/markdown",
         help = "Download complete documentation in markdown format"
     )
-
-
-# In your sidebar or documentation section
-#st.markdown("### Documentation Resources")
-
-# Simple direct download using Streamlit's built-in functionality
-#st.download_button(
-#    label=" Download Documentation",
-#    data=pyldavis_docs,
-#    file_name="pyLDAvis_Guide.md",
-#    mime="text/markdown",
-#    help="Download complete documentation in markdown format"
-#)
-
-# Plain text alternative
-#st.download_button(
-#    label=" Download as Plain Text",
-#    data=pyldavis_docs,
-#    file_name="pyLDAvis_Guide.txt",
-#    mime="text/plain",
-#    help="Download documentation as plain text"
-#)
 
 # Link to a web version if you have one
 st.markdown(
