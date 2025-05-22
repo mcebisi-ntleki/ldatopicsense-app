@@ -30,22 +30,65 @@ from textblob import TextBlob
 # Load environment variables
 load_dotenv()
 
-# Download necessary NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-    nltk.data.find('corpora/stopwords')
-    nltk.data.find('corpora/wordnet')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('wordnet')
+# 1. ALWAYS THE FIRST STREAMLIT COMMAND:
+st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
 
-# Initialise lemmatiser and stopwords
+# For deployment on Streamlit Community Cloud
+
+# --- NLTK Data Management --- #
+# Define a directory to store NLTK data within the app's environment
+# This will be created in the application's root directory on Streamlit Community Cloud
+nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
+
+# Add the directory to NLTK's data path
+# This ensures NLTK looks for data here first
+nltk.data.path.append(nltk_data_dir)
+
+# Create the directory if it doesn't exist
+if not os.path.exists(nltk_data_dir):
+    os.makedirs(nltk_data_dir)
+
+# Download NLTK resources if they are not already present
+# Use st.cache_resource to avoid re-downloading on every rerun if possible,
+# though the try-except block handles this more fundamentally.
+@st.cache_resource
+def download_nltk_data():
+    # Attempt to download 'punkt_tab' as explicitly requested by the ensuing error
+    try:
+        nltk.data.find('tokenizers/punkt_tab') # Check for punkt_tab specifically
+    except LookupError:
+        print("Downloading punkt_tab tokenizer...") # For debugging in logs
+        nltk.download('punkt_tab', download_dir=nltk_data_dir) # Download punkt_tab
+
+    # Keep the original 'punkt' download as well, just in case,
+    # while recognising that 'punkt_tab' seems to be the direct missing one.
+    # If the app starts working with just 'punkt_tab', we might remove this block.
+
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        print("Downloading punkt tokenizer...") # For debugging in logs
+        nltk.download('punkt', download_dir=nltk_data_dir)
+
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        print("Downloading stopwords corpus...")
+        nltk.download('stopwords', download_dir=nltk_data_dir)
+
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        print("Downloading wordnet corpus...")
+        nltk.download('wordnet', download_dir=nltk_data_dir)
+
+# Call the function to ensure data is present
+download_nltk_data()
+
+# --- End NLTK Data Management ---
+
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
-
-# App title and description
-st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
 
 st.title("Interview Topic Analysis Dashboard")
 st.markdown("""
