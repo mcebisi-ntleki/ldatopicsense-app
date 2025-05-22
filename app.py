@@ -33,12 +33,9 @@ load_dotenv()
 # 1. ALWAYS THE FIRST STREAMLIT COMMAND:
 st.set_page_config(page_title="Interview Topic Analysis", layout="wide")
 
-import nltk
-import os
-
 # For deployment on Streamlit Community Cloud
 
-# --- NLTK Data Management ---
+# --- NLTK Data Management --- #
 # Define a directory to store NLTK data within the app's environment
 # This will be created in the application's root directory on Streamlit Community Cloud
 nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
@@ -50,8 +47,6 @@ nltk.data.path.append(nltk_data_dir)
 # Create the directory if it doesn't exist
 if not os.path.exists(nltk_data_dir):
     os.makedirs(nltk_data_dir)
-
-
 
 # Download NLTK resources if they are not already present
 # Use st.cache_resource to avoid re-downloading on every rerun if possible,
