@@ -1146,7 +1146,7 @@ if 'results' in st.session_state and st.session_state.results is not None:
         # You would interact with your topic model object here
         # Example: st.write(results['topic_model'].get_params())
 
-    if 'documents_df' in results:
+    if 'documents_df0' in results:
         st.subheader("Processed Documents:")
         st.dataframe(results['documents_df'].head())
         st.write(f"Total documents: {len(results['documents_df'])}")
