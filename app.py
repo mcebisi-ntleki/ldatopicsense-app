@@ -60,10 +60,8 @@ def download_nltk_data():
         print("Downloading punkt_tab tokenizer...") # For debugging in logs
         nltk.download('punkt_tab', download_dir=nltk_data_dir) # Download punkt_tab
 
-    # Keep the original 'punkt' download as well, just in case,
-    # while recognising that 'punkt_tab' seems to be the direct missing one.
-    # If the app starts working with just 'punkt_tab', we might remove this block.
-
+    # 'punkt' works fine alone in local environment,
+    # 'punkt_tab' needed for community cloud.
     try:
         nltk.data.find('tokenizers/punkt')
     except LookupError:
@@ -85,7 +83,7 @@ def download_nltk_data():
 # Call the function to ensure data is present
 download_nltk_data()
 
-# --- End NLTK Data Management ---
+# --- End NLTK Data Management --- #
 
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
@@ -528,6 +526,7 @@ def explain_topic(model, topic_id, top_n=10):
     Look for distinct patterns in term weights - sharp drop-offs suggest more focused topics.
     """)
 
+# Not used after all
 def get_markdown_download_link(markdown_content, filename="pyLDAvis_documentation.md"):
     """Generate a link to download the markdown content as a file"""
     
@@ -539,7 +538,7 @@ def get_markdown_download_link(markdown_content, filename="pyLDAvis_documentatio
     
     return href
 
-# Define your sentiment analysis documentation content
+# Define own sentiment analysis documentation content
 sentiment_docs = """
 # Understanding Sentiment Analysis
 
@@ -553,12 +552,6 @@ Sentiment analysis identifies and extracts subjective information from text to d
 - **Negative score**: Indicates the strength of negative sentiment (typically 0-1)
 - **Neutral score**: Indicates the strength of neutral sentiment (typically 0-1)
 - **Compound score**: A normalized score that combines all three dimensions (-1 to +1)
-
-### Visualisation Elements
-- **Bar charts**: Show the distribution of sentiments across your dataset
-- **Line graphs**: Display sentiment trends over time (if time data is available)
-- **Heatmaps**: Identify correlations between sentiment and other variables
-- **Word clouds**: Highlight terms associated with different sentiment categories
 
 ## Interpreting the Results
 
@@ -581,7 +574,7 @@ The further the score is from zero, the stronger the sentiment.
 
 3. **Sentiment vs. topics**
    - Do certain topics correlate with specific sentiment patterns?
-   - Are some topics more polarizing than others?
+   - Are some topics more polarising than others?
 
 4. **Context dependence**
    - Sentiment can vary by domain (e.g., "unpredictable" may be negative for product reviews but positive for movie reviews)
@@ -936,7 +929,7 @@ if uploaded_file is not None:
                             # Display interactive visualisation
                             html_viz = create_topic_viz(results['lda_model'], results['corpus'], results['dictionary'])
                             if html_viz:
-                                # Add expandable help section before the visualization
+                                # Add expandable help section before the visualisation
                                 st.subheader(" How to interpret this visualisation")
                                 st.markdown("""
                                     ### Quick Guide
@@ -1007,8 +1000,8 @@ with st.expander("Label topics manually or with AI assistants"):
                             )
                 else:
                     st.warning("Please enter an OpenAI API key in the sidebar to use GPT labeling.")
-            elif assistant_choice == "Copilot (if configured)":
-                st.info("Copilot integration would require additional implementation with your specific Copilot setup.")
+            elif assistant_choice == "Copilot (TO DO configure)":
+                st.info("Copilot integration requires additional implementation with a specific Copilot setup.")
                 st.write("This would typically involve setting up an API connection to your Copilot endpoint.")
         else:
             st.warning("Please enter topic words to label.")
