@@ -500,32 +500,100 @@ def analyze_topics(df, interview_id=None):
         'sentiment_figures': sentiment_figures
     }
 
-def explain_topic(model, topic_id, top_n=10):
-    """Helper function to explain a specific topic in detail"""
+def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
+    """Enhanced function to explain a specific topic in detail"""
     
     st.subheader(f"Detailed Analysis of Topic {topic_id}")
     
     # Get the top terms for this topic
     topic_terms = model.show_topic(topic_id, topn=top_n)
     
-    # Display terms and their weights
-    term_df = pd.DataFrame(topic_terms, columns=["Term", "Weight"])
-    st.dataframe(term_df)
+    # Create a two column-layout for ease of readability
+    col1, col2 = st.columns([2, 1])
     
-    # Show topic distribution across documents
-    st.write("##### Topic Distribution in Documents")
-    # Add code to show in which documents this topic is prominent
+    with col1:
+        st.write("##### Top Terms and Weights")
+        # Create a pretty dataframe display
+        term_df = pd.DataFrame(topic_terms, columns=["Term", "Weight"])
+        term_df['Weight'] = term_df['Weight'].round(4)
+        st.dataframe(term_df, use_container_width=True)
+        
+        # Create a bar chart of term weights
+        fig = px.bar(
+            term_df, 
+            x='Weight', 
+            y='Term', 
+            orientation='h',
+            title=f"Term Weights for Topic {topic_id}"
+        )
+        fig.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig, use_container_width=True)
     
-    # Explain coherence
-    coherence = model.top_topics(corpus)[topic_id][1]
-    st.write(f"Topic coherence score: {coherence:.4f}")
+    with col2:
+        # Topic statistics
+        st.write("##### Topic Statistics")
+        
+        # Calculate topic prevalence across documents
+        doc_topic_probs = [doc for doc in model[corpus]]
+        topic_prevalence = sum([prob for doc in doc_topic_probs 
+                               for topic, prob in doc if topic == topic_id])
+        
+        st.metric("Topic Prevalence", f"{topic_prevalence:.2f}")
+        
+        # Count documents where this topic is dominant
+        dominant_docs = 0
+        for doc in doc_topic_probs:
+            if doc and max(doc, key=lambda x: x[1])[0] == topic_id:
+                dominant_docs += 1
+        
+        st.metric("Documents where dominant", dominant_docs)
+        
+        # Show topic coherence if available
+        try:
+            coherence_model = CoherenceModel(
+                model=model, 
+                texts=corpus, 
+                dictionary=dictionary, 
+                coherence='c_v'
+            )
+            coherence_score = coherence_model.get_coherence_per_topic()[topic_id]
+            st.metric("Coherence Score", f"{coherence_score:.4f}")
+        except:
+            st.info("Coherence score calculation not available")
+    
+    # Show sample documents
+    st.write("##### Sample Documents")
+    
+    # Find documents where this topic is prominent
+    prominent_docs = []
+    for doc_id, doc in enumerate(doc_topic_probs):
+        for topic, prob in doc:
+            if topic == topic_id and prob > 0.3:  # Threshold for "prominent"
+                prominent_docs.append((doc_id, prob))
+    
+    # Sort by probability and show top 3
+    prominent_docs.sort(key=lambda x: x[1], reverse=True)
+    
+    if prominent_docs:
+        st.write(f"Documents where Topic {topic_id} is prominent:")
+        for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
+            with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
+                # We'll need to access to our original texts here
+                # In particular, we'll need a way to get the original text by doc_id
+                st.write("*[Original document text would be displayed here]*")
+                st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
+    else:
+        st.info("No documents found where this topic is highly prominent.")
     
     # Interpretation tips
     st.info("""
-    **How to interpret:** Higher coherence scores suggest more semantically coherent topics.
-    Look for distinct patterns in term weights - sharp drop-offs suggest more focused topics.
+    ** How to interpret:**
+    - **Higher weights** indicate terms more central to this topic
+    - **Coherence scores** above 0.4 suggest semantically coherent topics
+    - **Topic prevalence** shows how common this theme is in your corpus
+    - Look for **semantic connections** between the top terms
     """)
-
+    
 # Not used after all
 def get_markdown_download_link(markdown_content, filename="pyLDAvis_documentation.md"):
     """Generate a link to download the markdown content as a file"""
@@ -695,7 +763,22 @@ if uploaded_file is not None:
     
                     # Display the visualisation
                     st.components.v1.html(html_viz, height=800)
-        
+
+                    # Topic exploration
+                    st.divider()
+                    st.subheader("Explore Individual Topics")
+    
+                    # Allow users to select a topic to explore in detail
+                    num_topics = lda_model.num_topics
+                    selected_topic = st.selectbox(
+                        "Select a topic for detailed analysis:",
+                        range(num_topics),
+                        format_func=lambda x: f"Topic {x}"
+                    )
+    
+                    if st.button("Analyse Selected Topic"):
+                        explain_topic(lda_model, selected_topic, corpus, dictionary)
+                
                 with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
                     ### Quick Guide
