@@ -788,8 +788,8 @@ if uploaded_file is not None:
                     #    format_func=lambda x: f"Topic {x}"
                     #)
     
-                    if st.button("Analyse Selected Topic"):
-                        explain_topic(results['lda_model'], selected_topic, results['corpus'], results['dictionary'])
+                    #if st.button("Analyse Selected Topic"):
+                     #   explain_topic(results['lda_model'], selected_topic, results['corpus'], results['dictionary'])
                 
                 with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
