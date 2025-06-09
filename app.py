@@ -761,8 +761,8 @@ if uploaded_file is not None:
                         [Click here to learn more](https://pyldavis.readthedocs.io/en/latest/) about topic modelling visualisations.
                         """)
     
-        # Display the visualisation
-        st.components.v1.html(html_viz, height=800)
+                # Display the visualisation
+                st.components.v1.html(html_viz, height=800)
 
         # Topic exploration
         st.divider()
