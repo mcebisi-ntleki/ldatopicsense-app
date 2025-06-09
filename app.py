@@ -588,13 +588,13 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
     else:
         st.info("No documents found where this topic is highly prominent.")
         
-    if prominent_docs:
-        st.write(f"Documents where Topic {topic_id} is prominent:")
-        for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
-            with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
-                original_text = st.session_state.results['original_texts'][doc_id]
-                st.write(original_text)
-                st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
+    #if prominent_docs:
+    #    st.write(f"Documents where Topic {topic_id} is prominent:")
+    #    for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
+    #        with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
+    #            original_text = st.session_state.results['original_texts'][doc_id]
+    #            st.write(original_text)
+    #            st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
     #if prominent_docs:
     #    st.write(f"Documents where Topic {topic_id} is prominent:")
     #    for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
