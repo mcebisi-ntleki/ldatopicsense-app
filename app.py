@@ -769,12 +769,24 @@ if uploaded_file is not None:
                     st.subheader("Explore Individual Topics")
     
                     # Allow users to select a topic to explore in detail
-                    num_topics = results['lda_model'].num_topics
-                    selected_topic = st.selectbox(
-                        "Select a topic for detailed analysis:",
-                        range(num_topics),
-                        format_func=lambda x: f"Topic {x}"
-                    )
+                    # Then use session state in your selectbox/button code
+                    if st.session_state.results is not None:
+                        num_topics = st.session_state.results['lda_model'].num_topics
+                        selected_topic = st.selectbox("Select a topic for detailed analysis:",
+                                                      range(num_topics),
+                                                      format_func=lambda x: f"Topic {x}")
+    
+                        if st.button("Analyse Selected Topic"):
+                            explain_topic(st.session_state.results['lda_model'], 
+                                          selected_topic, 
+                                          st.session_state.results['corpus'], 
+                                          st.session_state.results['dictionary'])
+                    #num_topics = results['lda_model'].num_topics
+                    #selected_topic = st.selectbox(
+                    #    "Select a topic for detailed analysis:",
+                    #    range(num_topics),
+                    #    format_func=lambda x: f"Topic {x}"
+                    #)
     
                     if st.button("Analyse Selected Topic"):
                         explain_topic(results['lda_model'], selected_topic, results['corpus'], results['dictionary'])
