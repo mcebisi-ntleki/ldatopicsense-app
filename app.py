@@ -551,15 +551,15 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
         # Show topic coherence if available
         try:
             coherence_model = CoherenceModel(
-                model=model, 
-                texts=corpus, 
-                dictionary=dictionary, 
+                model=st.session_state.results['lda_model'], 
+                texts=st.session_state.results['tokenized_answers'], 
+                dictionary=st.session_state.results['dictionary'], 
                 coherence='c_v'
             )
             coherence_score = coherence_model.get_coherence_per_topic()[topic_id]
             st.metric("Coherence Score", f"{coherence_score:.4f}")
-        except:
-            st.info("Coherence score calculation not available")
+        except Exception as e:
+            st.info(f"Coherence score calculation not available: {str(e)}")
     
     # Show sample documents
     st.write("##### Sample Documents")
