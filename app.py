@@ -769,7 +769,7 @@ if uploaded_file is not None:
                     st.subheader("Explore Individual Topics")
     
                     # Allow users to select a topic to explore in detail
-                    num_topics = lda_model.num_topics
+                    num_topics = results['lda_model'].num_topics
                     selected_topic = st.selectbox(
                         "Select a topic for detailed analysis:",
                         range(num_topics),
