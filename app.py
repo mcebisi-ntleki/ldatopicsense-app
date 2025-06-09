@@ -764,9 +764,9 @@ if uploaded_file is not None:
                     # Display the visualisation
                     st.components.v1.html(html_viz, height=800)
 
-                    # Topic exploration
-                    st.divider()
-                    st.subheader("Explore Individual Topics")
+            # Topic exploration
+            st.divider()
+            st.subheader("Explore Individual Topics")
     
             # Allow users to select a topic to explore in detail
             # Then use session state in your selectbox/button code
