@@ -573,15 +573,36 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
     
     # Sort by probability and show top 3
     prominent_docs.sort(key=lambda x: x[1], reverse=True)
-    
+
     if prominent_docs:
         st.write(f"Documents where Topic {topic_id} is prominent:")
         for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
             with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
-                # We'll need to access to our original texts here
-                # In particular, we'll need a way to get the original text by doc_id
-                st.write("*[Original document text would be displayed here]*")
+                # Get the original text from the DataFrame using doc_id as index
+                try:
+                    original_text = df.iloc[doc_id]['Answers']
+                    st.write(original_text)
+                except:
+                    st.write("*[Original document text not available]*")
                 st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
+    else:
+        st.info("No documents found where this topic is highly prominent.")
+        
+    if prominent_docs:
+        st.write(f"Documents where Topic {topic_id} is prominent:")
+        for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
+            with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
+                original_text = st.session_state.results['original_texts'][doc_id]
+                st.write(original_text)
+                st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
+    #if prominent_docs:
+    #    st.write(f"Documents where Topic {topic_id} is prominent:")
+    #    for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
+    #        with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
+    #            # We'll need to access to our original texts here
+    #            # In particular, we'll need a way to get the original text by doc_id
+    #            st.write("*[Original document text would be displayed here]*")
+    #            st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
     else:
         st.info("No documents found where this topic is highly prominent.")
     
