@@ -801,7 +801,7 @@ if uploaded_file is not None:
                     Download the complete documentation for detailed explanations.
                     """)
                 # Display sentiments
-                display_sentiment_analysis(results, unique_id = "combined")
+                display_sentiment_analysis(st.session_state.results, unique_id = "combined")
 
                 st.markdown("### Documentation Resources: Sentiment Analysis")
                 #st.markdown(get_markdown_download_link(sentiment_docs), unsafe_allow_html=True)
