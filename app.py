@@ -603,8 +603,8 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
     #            # In particular, we'll need a way to get the original text by doc_id
     #            st.write("*[Original document text would be displayed here]*")
     #            st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
-    else:
-        st.info("No documents found where this topic is highly prominent.")
+    #else:
+    #    st.info("No documents found where this topic is highly prominent.")
     
     # Interpretation tips
     st.info("""
