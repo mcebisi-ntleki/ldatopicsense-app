@@ -823,7 +823,7 @@ if uploaded_file is not None:
                     topic_id=selected_topic,
                     corpus=st.session_state.results['corpus'],
                     dictionary=st.session_state.results['dictionary'],
-                    sentiment_data=st.session_state.results['sentiment_scores'],
+                    sentiment_data=st.session_state.results['sentiment_results'],
                     top_n=10
                     )
         
