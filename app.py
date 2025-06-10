@@ -587,25 +587,7 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
                 st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
     else:
         st.info("No documents found where this topic is highly prominent.")
-        
-    #if prominent_docs:
-    #    st.write(f"Documents where Topic {topic_id} is prominent:")
-    #    for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
-    #        with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
-    #            original_text = st.session_state.results['original_texts'][doc_id]
-    #            st.write(original_text)
-    #            st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
-    #if prominent_docs:
-    #    st.write(f"Documents where Topic {topic_id} is prominent:")
-    #    for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
-    #        with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
-    #            # We'll need to access to our original texts here
-    #            # In particular, we'll need a way to get the original text by doc_id
-    #            st.write("*[Original document text would be displayed here]*")
-    #            st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
-    #else:
-    #    st.info("No documents found where this topic is highly prominent.")
-    
+            
     # Interpretation tips
     st.info("""
     ** How to interpret:**
@@ -614,18 +596,38 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
     - **Topic prevalence** shows how common this theme is in your corpus
     - Look for **semantic connections** between the top terms
     """)
+
+def explain_topic_with_sentiment(model, topic_id, corpus, dictionary, sentiment_data, top_n=10):
+    """Explain topic with sentiment information"""
     
-# Not used after all
-def get_markdown_download_link(markdown_content, filename="pyLDAvis_documentation.md"):
-    """Generate a link to download the markdown content as a file"""
+    # Call the regular explain_topic function first
+    explain_topic(model, topic_id, corpus, dictionary, top_n)
     
-    # Encode the markdown content
-    b64 = base64.b64encode(markdown_content.encode()).decode()
+    # Add sentiment analysis for this topic
+    st.write("##### Sentiment Analysis for this Topic")
     
-    # Create the download link
-    href = f'<a href="data:file/markdown;base64,{b64}" download="{filename}">Download Markdown Documentation</a>'
+    # Filter sentiment data for documents where this topic is prominent
+    topic_sentiments = []
+    doc_topic_probs = [doc for doc in model[corpus]]
     
-    return href
+    for doc_id, doc in enumerate(doc_topic_probs):
+        for topic, prob in doc:
+            if topic == topic_id and prob > 0.3:
+                if doc_id < len(sentiment_data):
+                    topic_sentiments.append(sentiment_data[doc_id])
+    
+    if topic_sentiments:
+        avg_sentiment = sum(topic_sentiments) / len(topic_sentiments)
+        st.metric("Average Sentiment", f"{avg_sentiment:.3f}")
+        
+        # Create sentiment distribution
+        import plotly.express as px
+        fig = px.histogram(
+            x=topic_sentiments,
+            title=f"Sentiment Distribution for Topic {topic_id}",
+            labels={'x': 'Sentiment Score', 'y': 'Count'}
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 # Define own sentiment analysis documentation content
 sentiment_docs = """
@@ -690,7 +692,7 @@ The further the score is from zero, the stronger the sentiment.
    - Brief texts may have less reliable sentiment scores
    - Consider aggregating short texts for more reliable analysis
 """
-
+###########################################    MAIN APPLICATION LOGIC    ##############################################
 # Main app logic
 if uploaded_file is not None:
     # Load and display data
@@ -785,12 +787,12 @@ if uploaded_file is not None:
                 # Display the visualisation
                 st.components.v1.html(html_viz, height=800)
 
-        # Topic exploration
+        # Exploration of individual topics
         st.divider()
         st.subheader("Explore Individual Topics")
     
         # Allow users to select a topic to explore in detail
-        # Then use session state in your selectbox/button code
+        # Then use session state in the selectbox/button code
         if 'results' in st.session_state and st.session_state.results is not None:
             num_topics = st.session_state.results['lda_model'].num_topics
             selected_topic = st.selectbox("Select a topic for detailed analysis:",
@@ -802,16 +804,7 @@ if uploaded_file is not None:
                               selected_topic, 
                               st.session_state.results['corpus'], 
                               st.session_state.results['dictionary'])
-                    #num_topics = results['lda_model'].num_topics
-                    #selected_topic = st.selectbox(
-                    #    "Select a topic for detailed analysis:",
-                    #    range(num_topics),
-                    #    format_func=lambda x: f"Topic {x}"
-                    #)
-    
-                    #if st.button("Analyse Selected Topic"):
-                     #   explain_topic(results['lda_model'], selected_topic, results['corpus'], results['dictionary'])
-                
+                                    
                 with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
                     ### Quick Guide
@@ -824,6 +817,16 @@ if uploaded_file is not None:
                 # Display sentiments
                 display_sentiment_analysis(st.session_state.results, unique_id = "combined")
 
+                # Enhance topic interpretation using sentiments results
+                explain_topic_with_sentiment(
+                    model=st.session_state.results['lda_model'],
+                    topic_id=selected_topic,
+                    corpus=st.session_state.results['corpus'],
+                    dictionary=st.session_state.results['dictionary'],
+                    sentiment_data=st.session_state.results['sentiment_scores'],
+                    top_n=10
+                    )
+        
                 st.markdown("### Documentation Resources: Sentiment Analysis")
                 #st.markdown(get_markdown_download_link(sentiment_docs), unsafe_allow_html=True)
                 
