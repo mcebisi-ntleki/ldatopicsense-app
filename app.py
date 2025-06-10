@@ -798,12 +798,21 @@ if uploaded_file is not None:
             selected_topic = st.selectbox("Select a topic for detailed analysis:",
                                           range(num_topics),
                                           format_func=lambda x: f"Topic {x}")
-        
+
             if st.button("Analyse Selected Topic"):
-                explain_topic(st.session_state.results['lda_model'], 
-                              selected_topic, 
-                              st.session_state.results['corpus'], 
-                              st.session_state.results['dictionary'])
+                explain_topic_with_sentiment(
+                    model=st.session_state.results['lda_model'], 
+                    topic_id=selected_topic, 
+                    corpus=st.session_state.results['corpus'], 
+                    dictionary=st.session_state.results['dictionary'],
+                    sentiment_data=st.session_state.results['sentiment_results'],  
+                    top_n=10
+                    )
+            #if st.button("Analyse Selected Topic"):
+            #    explain_topic(st.session_state.results['lda_model'], 
+            #                  selected_topic, 
+            #                  st.session_state.results['corpus'], 
+            #                  st.session_state.results['dictionary'])
                                     
                 with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
