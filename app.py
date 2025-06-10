@@ -801,6 +801,7 @@ if uploaded_file is not None:
                                           format_func=lambda x: f"Topic {x}")
 
             if st.button("Analyse Selected Topic"):
+                # Enhance topic interpretation further by including extracted sentiments
                 explain_topic_with_sentiment(
                     model=st.session_state.results['lda_model'], 
                     topic_id=selected_topic, 
@@ -809,12 +810,7 @@ if uploaded_file is not None:
                     sentiment_data=st.session_state.results['sentiment_results'],  
                     top_n=10
                     )
-            #if st.button("Analyse Selected Topic"):
-            #    explain_topic(st.session_state.results['lda_model'], 
-            #                  selected_topic, 
-            #                  st.session_state.results['corpus'], 
-            #                  st.session_state.results['dictionary'])
-                                    
+                                                
                 with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
                     ### Quick Guide
@@ -826,16 +822,6 @@ if uploaded_file is not None:
                     """)
                 # Display sentiments
                 display_sentiment_analysis(st.session_state.results, unique_id = "combined")
-
-                # Enhance topic interpretation using sentiments results
-                explain_topic_with_sentiment(
-                    model=st.session_state.results['lda_model'],
-                    topic_id=selected_topic,
-                    corpus=st.session_state.results['corpus'],
-                    dictionary=st.session_state.results['dictionary'],
-                    sentiment_data=st.session_state.results['sentiment_results'],
-                    top_n=10
-                    )
         
                 st.markdown("### Documentation Resources: Sentiment Analysis")
                 #st.markdown(get_markdown_download_link(sentiment_docs), unsafe_allow_html=True)
