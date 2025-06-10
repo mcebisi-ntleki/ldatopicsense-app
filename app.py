@@ -614,7 +614,8 @@ def explain_topic_with_sentiment(model, topic_id, corpus, dictionary, sentiment_
         for topic, prob in doc:
             if topic == topic_id and prob > 0.3:
                 if doc_id < len(sentiment_data):
-                    topic_sentiments.append(sentiment_data[doc_id])
+                    # Use 'polarity' column for sentiment score
+                    topic_sentiments.append(sentiment_results.iloc[doc_id]['polarity'])
     
     if topic_sentiments:
         avg_sentiment = sum(topic_sentiments) / len(topic_sentiments)
