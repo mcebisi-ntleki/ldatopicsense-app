@@ -853,6 +853,8 @@ if uploaded_file is not None:
         if st.button("Run Interview Analysis"):
             with st.spinner(f"Running topic analysis for Interview {selected_interview}..."):
                 results = analyze_topics(df, selected_interview)
+                # Store 'results' in session_state for ease of access
+                st.session_state.results = results
 
                 if 'error' in results:
                     st.error(results['error'])
