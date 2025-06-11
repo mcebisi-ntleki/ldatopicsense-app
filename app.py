@@ -909,7 +909,7 @@ if uploaded_file is not None:
                             [Click here to learn more](https://pyldavis.readthedocs.io/en/latest/) about topic modelling visualisations.
                             """)
                             
-                        st.components.v1.html(html_viz, height = 800)
+                    st.components.v1.html(html_viz, height = 800)
 
             # Exploration of individual topics
             st.divider()
