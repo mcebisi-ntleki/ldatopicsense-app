@@ -945,7 +945,7 @@ if uploaded_file is not None:
                      """)
                         
                 # Display sentiments
-                display_sentiment_analysis(session_state.results, unique_id=f"interview_{selected_interview}")
+                display_sentiment_analysis(st.session_state.results, unique_id=f"interview_{selected_interview}")
 
                 st.markdown("Download Full Documentation: Sentiment Analysis")
                 # Documentation download buttons
