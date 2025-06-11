@@ -934,25 +934,25 @@ if uploaded_file is not None:
                     top_n=10
                     )    
                         
-                    with st.expander("How to interpret sentiment analysis"):
-                        st.markdown("""
-                        ### Quick Guide
-                        - Compound score: Overall sentiment from -1 (negative) to +1 (positive)
-                        - Positive/Negative/Neutral scores: Individual sentiment dimensions (0-1)
-                        - Thresholds: Negative < -0.05, Neutral -0.05 to +0.05, Positive > +0.05
+                with st.expander("How to interpret sentiment analysis"):
+                    st.markdown("""
+                    ### Quick Guide
+                    - Compound score: Overall sentiment from -1 (negative) to +1 (positive)
+                    - Positive/Negative/Neutral scores: Individual sentiment dimensions (0-1)
+                    - Thresholds: Negative < -0.05, Neutral -0.05 to +0.05, Positive > +0.05
                         
-                        Download the complete documentation for detailed explanations.
-                        """)
+                    Download the complete documentation for detailed explanations.
+                     """)
                         
-                    # Display sentiments
-                    display_sentiment_analysis(results, unique_id=f"interview_{selected_interview}")
+                # Display sentiments
+                display_sentiment_analysis(results, unique_id=f"interview_{selected_interview}")
 
-                    st.markdown("Download Full Documentation: Sentiment Analysis")
-                    # Documentation download buttons
-                    col1, col2 = st.columns(2)
+                st.markdown("Download Full Documentation: Sentiment Analysis")
+                # Documentation download buttons
+                col1, col2 = st.columns(2)
 
-                    with col1:
-                        st.download_button(
+                with col1:
+                    st.download_button(
                         label=" Download Full Documentation",
                         data=sentiment_docs,
                         file_name="Sentiment_Analysis_Guide.md",
@@ -960,8 +960,8 @@ if uploaded_file is not None:
                         help="Download the complete sentiment analysis documentation in markdown format"
                         )
 
-                    with col2:
-                        st.download_button(
+                with col2:
+                    st.download_button(
                         label=" Download as Plain Text",
                         data=sentiment_docs,
                         file_name="Sentiment_Analysis_Guide.txt",
