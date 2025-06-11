@@ -635,7 +635,10 @@ sentiment_docs = """
 # Understanding Sentiment Analysis
 
 ## Overview
-Sentiment analysis identifies and extracts subjective information from text to determine the writer's attitude toward a topic—whether it's positive, negative, or neutral. This documentation explains how our sentiment analysis works, how to interpret results, and common patterns to look for.
+Sentiment analysis identifies and extracts subjective information from text to determine 
+the writer's attitude toward a topic—whether it's positive, negative, or neutral. 
+This documentation explains how our sentiment analysis works, 
+how to interpret results, and common patterns to look for.
 
 ## Key Components
 
@@ -643,7 +646,7 @@ Sentiment analysis identifies and extracts subjective information from text to d
 - **Positive score**: Indicates the strength of positive sentiment (typically 0-1)
 - **Negative score**: Indicates the strength of negative sentiment (typically 0-1)
 - **Neutral score**: Indicates the strength of neutral sentiment (typically 0-1)
-- **Compound score**: A normalized score that combines all three dimensions (-1 to +1)
+- **Compound score**: A normalised score that combines all three dimensions (-1 to +1)
 
 ## Interpreting the Results
 
@@ -670,7 +673,7 @@ The further the score is from zero, the stronger the sentiment.
 
 4. **Context dependence**
    - Sentiment can vary by domain (e.g., "unpredictable" may be negative for product reviews but positive for movie reviews)
-   - Industry-specific terms may carry sentiment not recognized by general models
+   - Industry-specific terms may carry sentiment not recognised by general models
 
 ## Limitations and Considerations
 
@@ -759,7 +762,7 @@ if uploaded_file is not None:
                     st.info(" **First time using the Topic Visualizer?** Follow the brief tour below to understand what you're seeing.")
     
                     st.markdown("""
-                    ### Brief Tour of the Topic Visualization
+                    ### Brief Tour of the Topic Visualisation
                     1. **Left panel**: Each bubble is a topic. Click on any bubble to explore that topic.
                     2. **Right panel**: See which terms define each topic.
                     3. **Try this**: Click different bubbles and watch how the red bars change.
@@ -1279,6 +1282,7 @@ st.markdown("---")
 st.markdown("""
 **About this app:**
 This tool uses Latent Dirichlet Allocation (LDA) to extract topics from interview data. 
-It automatically determines the optimal number of topics based on coherence scores and 
-can leverage GPT or other AI assistants to generate human-readable labels for the topics.
+It automatically determines the optimal number of topics based on coherence scores, 
+integrates sentiment analysis for richer insights, and can leverage GPT or 
+other AI assistants to generate human-readable labels for the topics.
 """)
