@@ -810,7 +810,7 @@ if uploaded_file is not None:
                     sentiment_data=st.session_state.results['sentiment_results'],  
                     top_n=10
                     )
-                                                
+                                                    
                 with st.expander(" How to interpret sentiment analysis"):
                     st.markdown("""
                     ### Quick Guide
@@ -908,7 +908,29 @@ if uploaded_file is not None:
                             """)
                             
                         st.components.v1.html(html_viz, height = 800)
+
+                # Exploration of individual topics
+                st.divider()
+                st.subheader("Explore Individual Topics")
     
+                # Allow users to select a topic to explore in detail
+                # Then use session state in the selectbox/button code
+                if 'results' in st.session_state and st.session_state.results is not None:
+                    num_topics = st.session_state.results['lda_model'].num_topics
+                    selected_topic = st.selectbox("Select a topic for detailed analysis:",
+                                                  range(num_topics),
+                                                  format_func=lambda x: f"Topic {x}")
+
+                if st.button("Analyse Selected Topic"):
+                    # Enhance topic interpretation further by including extracted sentiments
+                    explain_topic_with_sentiment(
+                        model=st.session_state.results['lda_model'], 
+                        topic_id=selected_topic, 
+                        corpus=st.session_state.results['corpus'], 
+                        dictionary=st.session_state.results['dictionary'],
+                        sentiment_data=st.session_state.results['sentiment_results'],  
+                        top_n=10
+                    )    
                     with st.expander("How to interpret sentiment analysis"):
                         st.markdown("""
                         ### Quick Guide
