@@ -704,7 +704,7 @@ if uploaded_file is not None:
     
     # Display raw data
     st.subheader("Raw Data")
-    st.write(df.head())
+    st.write(df[1 : 5])
     
     # Get unique interview IDs
     interview_ids = df['InterviewID'].unique()
@@ -801,7 +801,7 @@ if uploaded_file is not None:
             num_topics = st.session_state.results['lda_model'].num_topics
             selected_topic = st.selectbox("Select a topic for detailed analysis:",
                                           range(num_topics),
-                                          format_func=lambda x: f"Topic {x}")
+                                          format_func=lambda x: f"Topic {x+1}")
 
             if st.button("Analyse Selected Topic"):
                 # Enhance topic interpretation further by including extracted sentiments
@@ -924,7 +924,7 @@ if uploaded_file is not None:
             num_topics = st.session_state.results['lda_model'].num_topics
             selected_topic = st.selectbox("Select a topic for detailed analysis:",
                                           range(num_topics),
-                                          format_func=lambda x: f"Topic {x}")
+                                          format_func=lambda x: f"Topic {x+1}")
 
             if st.button("Analyse Selected Topic"):
                 # Enhance topic interpretation further by including extracted sentiments
