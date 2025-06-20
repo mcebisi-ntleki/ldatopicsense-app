@@ -1,5 +1,4 @@
 # Set up Streamlit app in a Python file
-from pyngrok import ngrok
 import streamlit as st
 import pandas as pd
 import numpy as np
