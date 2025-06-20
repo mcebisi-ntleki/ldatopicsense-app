@@ -583,7 +583,7 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
                     st.write(original_text)
                 except:
                     st.write("*[Original document text not available]*")
-                st.write(f"**Topic {topic_id} weight in this document: {prob:.3f}**")
+                st.write(f"**Topic {topic_id+1} weight in this document: {prob:.3f}**")
     else:
         st.info("No documents found where this topic is highly prominent.")
             
@@ -624,7 +624,7 @@ def explain_topic_with_sentiment(model, topic_id, corpus, dictionary, sentiment_
         import plotly.express as px
         fig = px.histogram(
             x=topic_sentiments,
-            title=f"Sentiment Distribution for Topic {topic_id}",
+            title=f"Sentiment Distribution for Topic {topic_id+1}",
             labels={'x': 'Sentiment Score', 'y': 'Count'}
         )
         st.plotly_chart(fig, use_container_width=True)
