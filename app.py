@@ -574,9 +574,9 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
     prominent_docs.sort(key=lambda x: x[1], reverse=True)
 
     if prominent_docs:
-        st.write(f"Documents where Topic {topic_id} is prominent:")
+        st.write(f"Documents where Topic {topic_id+1} is prominent:")
         for i, (doc_id, prob) in enumerate(prominent_docs[:3]):
-            with st.expander(f"Document {doc_id} (Topic weight: {prob:.3f})"):
+            with st.expander(f"Document {doc_id+1} (Topic weight: {prob:.3f})"):
                 # Get the original text from the DataFrame using doc_id as index
                 try:
                     original_text = df.iloc[doc_id]['Answers']
