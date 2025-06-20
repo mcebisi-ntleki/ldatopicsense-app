@@ -503,7 +503,7 @@ def analyze_topics(df, interview_id=None):
 def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
     """Enhanced function to explain a specific topic in detail"""
     
-    st.subheader(f"Detailed Analysis of Topic {topic_id}")
+    st.subheader(f"Detailed Analysis of Topic {topic_id+1}")
     
     # Get the top terms for this topic
     topic_terms = model.show_topic(topic_id, topn=top_n)
@@ -524,7 +524,7 @@ def explain_topic(model, topic_id, corpus, dictionary, top_n=10):
             x='Weight', 
             y='Term', 
             orientation='h',
-            title=f"Term Weights for Topic {topic_id}"
+            title=f"Term Weights for Topic {topic_id+1}"
         )
         fig.update_layout(yaxis={'categoryorder':'total ascending'})
         st.plotly_chart(fig, use_container_width=True)
@@ -704,7 +704,7 @@ if uploaded_file is not None:
     
     # Display raw data
     st.subheader("Raw Data")
-    st.write(df[1 : 5])
+    st.write(df.head())
     
     # Get unique interview IDs
     interview_ids = df['InterviewID'].unique()
@@ -759,7 +759,7 @@ if uploaded_file is not None:
                 
                 # Create and display interactive topic visualisation
                 if st.session_state.first_visit:
-                    st.info(" **First time using the Topic Visualizer?** Follow the brief tour below to understand what you're seeing.")
+                    st.info(" **First time using the Topic Visualiser?** Follow the brief tour below to understand what you're seeing.")
     
                     st.markdown("""
                     ### Brief Tour of the Topic Visualisation
