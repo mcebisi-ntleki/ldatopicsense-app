@@ -7,7 +7,6 @@ openai
 seaborn
 nltk
 gensim
-pyngrok
 transformers
 accelerate
 bitsandbytes
